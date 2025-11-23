@@ -1,15 +1,15 @@
 package com.interview.shoppingcartpricing.adapter.inbound.web.api;
 
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotEmpty;
 
 import java.util.List;
 
 /**
- * DTO representing the payload to calculate a cart total.
+ * Request wrapper encapsulating client information and cart items.
+ * Allows polymorphic client types via {@link ClientDto}.
  */
 public record CartCalculationRequest(
-        @NotNull @Valid ClientRequest client,
-        @NotNull @Valid List<CartItemRequest> items
-) {
-}
+        @Valid Object client,
+        @NotEmpty List<CartItemRequest> items
+) {}

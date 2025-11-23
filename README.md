@@ -15,7 +15,7 @@ A clean and maintainable Java 21 / Spring Boot 3 backend service implementing a 
     - Domain layer with pure business logic (records, policies, domain services).
     - Application layer implementing use-case orchestration.
     - Inbound adapter exposing a REST API with transport-specific request/response models.
-- No framework dependencies inside the domain and application layers.
+- No framework dependencies inside the domain (even lombok).
 - Unit tests validating pricing rules and integration tests covering the REST interface.
 
 ---
@@ -55,7 +55,7 @@ http://localhost:8080/api/carts/total
 
 POST /api/carts/total
 
-Request example:
+Request example for a professional client:
 
 ```bash
 {
@@ -63,10 +63,27 @@ Request example:
     "type": "PROFESSIONAL",
     "id": "P1",
     "companyName": "Big Corp",
+    "registrationNumber": "REG-001",
     "annualRevenue": 15000000
   },
   "items": [
     { "productType": "HIGH_END_PHONE", "quantity": 2 },
+    { "productType": "LAPTOP", "quantity": 1 }
+  ]
+}
+```
+
+Request example for a individual client:
+
+```bash
+{
+  "client": {
+    "type": "INDIVIDUAL",
+    "id": "C1",
+    "firstName": "John",
+    "lastName": "Doe"
+  },
+  "items": [
     { "productType": "LAPTOP", "quantity": 1 }
   ]
 }
@@ -80,6 +97,19 @@ Response example:
   "currency": "EUR"
 }
 ```
+
+## Why a single endpoint is used instead of separate endpoints for each client type
+This service exposes one unified endpoint (`POST /api/carts/total`) for both individual and professional clients.  
+The decision was intentional for several reasons:
+
+- The endpoint performs one operation — calculating the cart total — which does not depend on the client type.
+- Keeping a single endpoint reduces API surface and simplifies client integration.
+- Different client types are expressed using dedicated DTOs instead of separate URLs.
+- The design is extensible: adding new client types does not require changing routes.
+- Both client types return the same response format, so splitting into multiple endpoints adds no real value.
+
+---
+
 ## Error Handling Strategy
 
 The inbound Web adapter provides a centralized exception handling mechanism implemented using `@ControllerAdvice`.

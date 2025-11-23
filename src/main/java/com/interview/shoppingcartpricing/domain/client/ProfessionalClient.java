@@ -21,7 +21,14 @@ public record ProfessionalClient(
     private static final BigDecimal HIGH_REVENUE_THRESHOLD = BigDecimal.valueOf(10_000_000L);
 
     public ProfessionalClient {
+        Objects.requireNonNull(id, "id must not be null");
+        Objects.requireNonNull(companyName, "companyName must not be null");
+        Objects.requireNonNull(registrationNumber, "registrationNumber must not be null");
         Objects.requireNonNull(annualRevenue, "annualRevenue must not be null");
+
+        if (annualRevenue.compareTo(BigDecimal.ZERO) < 0) {
+            throw new IllegalArgumentException("annualRevenue must not be negative");
+        }
     }
 
     @Override

@@ -2,10 +2,6 @@ package com.interview.shoppingcartpricing.infrastructure.web;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.interview.shoppingcartpricing.ShoppingCartPricingApplication;
-import com.interview.shoppingcartpricing.adapter.inbound.web.api.CartCalculationRequest;
-import com.interview.shoppingcartpricing.adapter.inbound.web.api.CartItemRequest;
-import com.interview.shoppingcartpricing.adapter.inbound.web.api.ClientRequest;
-import com.interview.shoppingcartpricing.domain.product.ProductType;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -22,7 +18,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 /**
- * Integration test verifying the REST endpoint end-to-end.
+ * Integration tests for the shopping cart pricing REST API.
+ * Verifies correct behavior for both client types and error scenarios.
  */
 @SpringBootTest(classes = ShoppingCartPricingApplication.class)
 @AutoConfigureMockMvc
@@ -34,69 +31,114 @@ class CartControllerIntegrationTest {
     @Autowired
     ObjectMapper objectMapper;
 
+    // Individual client
     @Test
-    void shouldCalculateTotalForIndividualClientViaHttp() throws Exception {
-        Map<String, Object> client = Map.of(
+    void shouldCalculateTotalForIndividualClient() throws Exception {
+        var client = Map.of(
                 "type", "INDIVIDUAL",
                 "id", "C1",
                 "firstName", "John",
                 "lastName", "Doe"
         );
 
-        List<Map<String, Object>> items = List.of(
-                Map.of("productType", "HIGH_END_PHONE", "quantity", 1),
-                Map.of("productType", "MID_RANGE_PHONE", "quantity", 1)
+        var items = List.of(
+                Map.of("productType", "LAPTOP", "quantity", 1)
         );
 
-        Map<String, Object> requestBody = Map.of(
+        var request = Map.of(
                 "client", client,
                 "items", items
         );
 
-        mockMvc.perform(post("/api/carts/total")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(requestBody)))
+        mockMvc.perform(
+                        post("/api/carts/total")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(request))
+                )
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.currency", is("EUR")))
-                .andExpect(jsonPath("$.total", is(2300)));
+                .andExpect(jsonPath("$.total", is(1200))); // laptop individual price
     }
 
+
+    // Professional client (high revenue)
     @Test
-    void shouldCalculateTotalForHighRevenueProfessionalClientViaHttp() throws Exception {
-        Map<String, Object> client = Map.of(
+    void shouldCalculateTotalForProfessionalHighRevenue() throws Exception {
+        var client = Map.of(
                 "type", "PROFESSIONAL",
                 "id", "P1",
                 "companyName", "Big Corp",
-                "annualRevenue", BigDecimal.valueOf(15_000_000L)
+                "registrationNumber", "REG-001",
+                "annualRevenue", BigDecimal.valueOf(15_000_000)
         );
 
-        List<Map<String, Object>> items = List.of(
-                Map.of("productType", "LAPTOP", "quantity", 2)
+        var items = List.of(
+                Map.of("productType", "HIGH_END_PHONE", "quantity", 2)
         );
 
-        Map<String, Object> requestBody = Map.of(
+        var request = Map.of(
                 "client", client,
                 "items", items
         );
 
-        mockMvc.perform(post("/api/carts/total")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(requestBody)))
+        mockMvc.perform(
+                        post("/api/carts/total")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(request))
+                )
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.currency", is("EUR")))
-                .andExpect(jsonPath("$.total", is(1800)));
+                .andExpect(jsonPath("$.total", is(2000))); // 2 * 1000 (high revenue price)
     }
 
+    // Professional client (low revenue)
     @Test
-    void shouldReturnBadRequestForInvalidInput() throws Exception {
-        ClientRequest client = new ClientRequest(
-                "INDIVIDUAL", "C1", "John", "Doe",
-                null, null, null, null
+    void shouldCalculateTotalForProfessionalLowRevenue() throws Exception {
+
+        var client = Map.of(
+                "type", "PROFESSIONAL",
+                "id", "P2",
+                "companyName", "Small Biz",
+                "registrationNumber", "REG-002",
+                "annualRevenue", BigDecimal.valueOf(5_000_000)  // <= 10M
         );
 
-        CartCalculationRequest request = new CartCalculationRequest(
-                client,
-                List.of(new CartItemRequest(ProductType.HIGH_END_PHONE, 0))
+        var items = List.of(
+                Map.of("productType", "MID_RANGE_PHONE", "quantity", 1),  // 600
+                Map.of("productType", "LAPTOP", "quantity", 2)            // 2 × 1000 = 2000
+        );
+
+        var request = Map.of(
+                "client", client,
+                "items", items
+        );
+
+        mockMvc.perform(
+                        post("/api/carts/total")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(request))
+                )
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.currency", is("EUR")))
+                .andExpect(jsonPath("$.total", is(2600))); // 600 + 2000
+    }
+
+
+    // Invalid professional client
+    @Test
+    void shouldReturnBadRequestForMissingRequiredProfessionalFields() throws Exception {
+        // Missing registrationNumber AND missing annualRevenue
+        var client = Map.of(
+                "type", "PROFESSIONAL",
+                "id", "P1",
+                "companyName", "Big Corp"
+        );
+
+        var request = Map.of(
+                "client", client,
+                "items", List.of(
+                        Map.of("productType", "LAPTOP", "quantity", 1)
+                )
         );
 
         mockMvc.perform(
@@ -105,6 +147,38 @@ class CartControllerIntegrationTest {
                                 .content(objectMapper.writeValueAsString(request))
                 )
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").value("Validation failed"));
+                .andExpect(jsonPath("$.message", is("Validation failed")))
+                .andExpect(jsonPath("$.errors").exists());
+    }
+
+    // Invalid product type
+    @Test
+    void shouldReturnBadRequestForUnknownProductType() throws Exception {
+
+        var unsupportedType = "Tetris";
+        var client = Map.of(
+                "id", "C1",
+                "firstName", "John",
+                "lastName", "Doe"
+        );
+
+        var badItem = Map.of(
+                "productType", unsupportedType,  // Unsupported type
+                "quantity", 1
+        );
+
+        var request = Map.of(
+                "clientType", "INDIVIDUAL",
+                "client", client,
+                "items", List.of(badItem)
+        );
+
+        mockMvc.perform(
+                        post("/api/carts/total")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(request))
+                )
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message", is("Unsupported product type: " + unsupportedType)));
     }
 }

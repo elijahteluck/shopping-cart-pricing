@@ -13,6 +13,14 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+/**
+ * Unit tests for {@link ShoppingCartCalculator}.
+ *
+ * These tests verify that the calculator correctly applies pricing rules
+ * based on the type of client (individual, professional with high revenue,
+ * professional with low revenue) and produces the expected total amounts
+ * for different shopping cart configurations.
+ */
 class ShoppingCartCalculatorTest {
 
     private final ShoppingCartCalculator calculator = new ShoppingCartCalculator();

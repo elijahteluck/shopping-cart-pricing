@@ -5,8 +5,8 @@ import com.interview.shoppingcartpricing.application.CartCalculationUseCase;
 import com.interview.shoppingcartpricing.adapter.inbound.web.api.CartCalculationRequest;
 import com.interview.shoppingcartpricing.adapter.inbound.web.api.CartCalculationResponse;
 import jakarta.validation.Valid;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -16,18 +16,14 @@ import org.springframework.web.bind.annotation.RestController;
 /**
  * REST controller exposing an API to calculate shopping cart totals.
  */
+@Slf4j
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/api/carts")
 public class CartController {
 
     private final CartCalculationUseCase useCase;
     private final WebDtoMapper mapper;
-    private static final Logger log = LoggerFactory.getLogger(CartController.class);
-
-    public CartController(CartCalculationUseCase useCase, WebDtoMapper mapper) {
-        this.useCase = useCase;
-        this.mapper = mapper;
-    }
 
     /**
      * Calculates the total of a shopping cart for a given client.

@@ -2,8 +2,7 @@ package com.interview.shoppingcartpricing.application;
 
 import com.interview.shoppingcartpricing.domain.cart.ShoppingCart;
 import com.interview.shoppingcartpricing.domain.calculator.ShoppingCartCalculator;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -16,11 +15,9 @@ import static com.interview.shoppingcartpricing.domain.common.Currency.EUR;
  * <p>
  * This service orchestrates the domain model and exposes an intention-revealing API.
  */
+@Slf4j
 @Service
 public class CartCalculationService implements CartCalculationUseCase {
-
-    private static final Logger log = LoggerFactory.getLogger(CartCalculationService.class);
-
 
     private final ShoppingCartCalculator calculator;
 
